@@ -17,7 +17,7 @@ def post_slack_message(token, channel, text):
     response = requests.post("https://slack.com/api/chat.postMessage",
                              headers={"Authorization": "Bearer " + token},
                              data={"channel": channel, "text": text})
-    print(response)
+    # print(response)
 
 
 def get_edaily_news():
