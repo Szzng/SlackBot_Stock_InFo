@@ -13,4 +13,5 @@ for i in get_edaily_news():
 post_slack_message(token, "#ipo일정", headline)
 post_slack_message(token, "#ipo일정", get_IPO_info())
 
+print(headline, 'success')
 # 최근 공시
