@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 import re
-from datetime import datetime
+import datetime
 
 def create_soup(url):
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -12,29 +12,53 @@ def create_soup(url):
     soup = bs(res.text, 'lxml')
     return soup
 
-
-def post_slack_message(token, channel, text):
-    response = requests.post("https://slack.com/api/chat.postMessage",
-                             headers={"Authorization": "Bearer " + token},
-                             data={"channel": channel, "text": text})
-    # print(response)
-
-
 def get_edaily_news():
-    today = datetime.today().strftime('%Y%m%d')
+    standard_time = (datetime.datetime.today() - datetime.timedelta(hours=1.05)).strftime('%H:%M')
+    context = []
+
+    today = datetime.datetime.today().strftime('%Y%m%d')
     todaynews_url = f'https://www.edaily.co.kr/articles/stock/item/{today}'
     soup = create_soup(todaynews_url)
     news_list = soup.find('div', id='newsList').find_all('div', class_='newsbox_04')
-    context = []
     for idx, news in enumerate(news_list):
-        a = news.find('a')
-        title = a['title']
-        link = 'https://www.edaily.co.kr/' + a['href']
         wdate = news.find('div', class_='author_category').get_text()
         re_d = re.sub('[\D]', '', wdate)
         wdate = re_d[2:4] + '월 ' + re_d[4:6] + '일 ' + re_d[6:8] + ':' + re_d[8:]
-        context.append(f'\n{idx + 1}. {title} \t({wdate})\n{link}\n')
+        if standard_time < wdate[-5:]:
+            a = news.find('a')
+            title = a['title']
+            link = 'https://www.edaily.co.kr/' + a['href']
+            context.append(f'\n{idx + 1}. {title} \t({wdate})\n{link}\n')
     return context
+
+
+def get_dart():
+    kospi_url = 'https://dart.fss.or.kr/dsac001/mainY.do'
+    kosdaq_url = 'https://dart.fss.or.kr/dsac001/mainK.do?selectDate=&sort=&series=&mdayCnt=0'
+    own_url = 'https://dart.fss.or.kr/dsac001/mainO.do'
+
+    standard_time = (datetime.datetime.today() - datetime.timedelta(hours=1.05)).strftime('%H:%M')
+    context = []
+
+    for idx, url in enumerate([kospi_url, kosdaq_url, own_url]):
+        soup = create_soup(url)
+        trs = soup.find('div', class_='tbListInner').find_all('tr')
+
+        for tr in trs:
+            td = tr.find_all('td')
+            if len(td) < 1: continue
+            time = td[0].get_text().strip()
+            if standard_time < time:
+                pre = re.sub('\s', '', td[1].find('span').get_text().strip())
+                category = pre[0]
+                corp = pre[1:]
+                a = td[2].find('a')
+                report = re.sub('\s', '', a.get_text().strip())
+                link = 'https://dart.fss.or.kr/' + a['href']
+
+                context.append(f'{time} \t({category}) {corp}\t{report}\n{link}')
+    context
+
 
 def get_IPO_info():
     df = pd.DataFrame(columns=['코', '이름', '공모가', '업종', '주관사', '경쟁률', '청약일정', '상장일'])
@@ -55,13 +79,3 @@ def get_IPO_info():
         df.loc[len(df)] = [name[2:3], name[3:], price, busi, sup, competition, private, date]
 
     return df.to_markdown()
-
-
-def slack(token):
-    headline = '## ' + str(datetime.today().strftime('%Y년 %m월 %d일')) + '\t이데일리 뉴스 목록 ##'
-    post_slack_message(token, "#이데일리뉴스", headline)
-    for i in get_edaily_news():
-        post_slack_message(token, "#이데일리뉴스", i)
-
-    post_slack_message(token, "#이데일리뉴스", '## 기업 IPO ##')
-    post_slack_message(token, "#이데일리뉴스", get_IPO_info())
