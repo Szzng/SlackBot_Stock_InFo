@@ -15,7 +15,6 @@ def create_soup(url):
 def get_edaily_news():
     standard_time = (datetime.datetime.today() - datetime.timedelta(hours=1.05)).strftime('%H:%M')
     context = []
-
     today = datetime.datetime.today().strftime('%Y%m%d')
     todaynews_url = f'https://www.edaily.co.kr/articles/stock/item/{today}'
     soup = create_soup(todaynews_url)
@@ -28,9 +27,11 @@ def get_edaily_news():
             a = news.find('a')
             title = a['title']
             link = 'https://www.edaily.co.kr/' + a['href']
-            context.append(f'\n{idx + 1}. {title} \t({wdate})\n{link}\n')
+            order = len(news_list)-idx
+            context.append(f'\n{order}. {title} \t({wdate})\n{link}\n')
     return context
 
+print(get_edaily_news())
 
 def get_dart():
     kospi_url = 'https://dart.fss.or.kr/dsac001/mainY.do'
@@ -57,7 +58,7 @@ def get_dart():
                 link = 'https://dart.fss.or.kr/' + a['href']
 
                 context.append(f'{time} \t({category}) {corp}\t{report}\n{link}')
-    context
+    return context
 
 
 def get_IPO_info():

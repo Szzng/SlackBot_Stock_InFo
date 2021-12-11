@@ -6,4 +6,3 @@ token, headline = handle_slack_common_parts(channel)
 post_slack_message(token, channel, get_IPO_info())
 
 print(channel, headline)
-
