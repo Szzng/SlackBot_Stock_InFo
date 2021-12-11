@@ -31,7 +31,6 @@ def get_edaily_news():
             context.append(f'\n{order}. {title} \t({wdate})\n{link}\n')
     return context
 
-print(get_edaily_news())
 
 def get_dart():
     kospi_url = 'https://dart.fss.or.kr/dsac001/mainY.do'
