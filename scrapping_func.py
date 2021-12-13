@@ -19,7 +19,8 @@ def get_edaily_news():
     todaynews_url = f'https://www.edaily.co.kr/articles/stock/item/{today}'
     soup = create_soup(todaynews_url)
     news_list = soup.find('div', id='newsList').find_all('div', class_='newsbox_04')
-    for idx, news in enumerate(news_list):
+
+    for idx, news in enumerate(news_list[::-1]):
         wdate = news.find('div', class_='author_category').get_text()
         re_d = re.sub('[\D]', '', wdate)
         wdate = re_d[2:4] + '월 ' + re_d[4:6] + '일 ' + re_d[6:8] + ':' + re_d[8:]
@@ -27,8 +28,7 @@ def get_edaily_news():
             a = news.find('a')
             title = a['title']
             link = 'https://www.edaily.co.kr/' + a['href']
-            order = len(news_list)-idx
-            context.append(f'\n{order}. {title} \t({wdate})\n{link}\n')
+            context.append(f'\n{idx+1}. {title} \t({wdate})\n{link}\n')
     return context
 
 
@@ -41,10 +41,15 @@ def get_dart():
     context = []
 
     for idx, url in enumerate([kospi_url, kosdaq_url, own_url]):
+
+        if idx == 0: context.append('# 코스피 #')
+        elif idx == 1: context.append('# 코스닥 #')
+        else: context.append('# 5%ㆍ임원보고 #')
+
         soup = create_soup(url)
         trs = soup.find('div', class_='tbListInner').find_all('tr')
 
-        for tr in trs:
+        for tr in trs[::-1]:
             td = tr.find_all('td')
             if len(td) < 1: continue
             time = td[0].get_text().strip()
@@ -56,7 +61,7 @@ def get_dart():
                 report = re.sub('\s', '', a.get_text().strip())
                 link = 'https://dart.fss.or.kr/' + a['href']
 
-                context.append(f'{time} \t({category}) {corp}\t{report}\n{link}')
+                context.append(f'* {time} \t({category}) {corp}\t{report}\n{link}')
     return context
 
 
